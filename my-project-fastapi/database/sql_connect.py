@@ -1,6 +1,6 @@
 from fastapi.params import Depends
 from sqlalchemy import create_engine
-from sqlalchemy.sql.annotation import Annotated
+from typing import Annotated
 from sqlmodel import SQLModel, Session
 
 sqlite_file_name = "database.db"
@@ -17,4 +17,4 @@ def get_session():
     with Session(engine) as session:
         yield session
 
-SessionDep = Annotated[Session, Depends(get_session)]
+SessionDep = Annotated[Session, Depends(get_session)] #Entender mais depois o que é isso
