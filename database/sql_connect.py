@@ -2,6 +2,7 @@ from fastapi.params import Depends
 from typing import Annotated
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlmodel import SQLModel
 
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite+aiosqlite:///{sqlite_file_name}"
@@ -9,6 +10,10 @@ sqlite_url = f"sqlite+aiosqlite:///{sqlite_file_name}"
 engine = create_async_engine(sqlite_url)
 
 async_factory = async_sessionmaker(engine, expire_on_commit=False)
+
+async def create_db_and_tables():
+    async with engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
 
 async def get_session():
     async with async_factory() as async_session:
