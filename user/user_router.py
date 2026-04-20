@@ -1,17 +1,18 @@
 from typing import Annotated
 from fastapi import Path
 from fastapi import APIRouter, Depends
-from user.user_table import UserTable, UserEmailDTO
+from fastapi.security import OAuth2PasswordRequestForm
+
+from user.user_table import UserTable, UserEmailDTO, UserReduce
 from user.user_controller import UserControllerDep
 
 router_user = APIRouter()
 
-@router_user.post("/get-by-email")
-async def get_user_by_email(user: UserEmailDTO, controller: UserControllerDep):
-    check_user = await controller.get_user_controller(user.email)
-    return check_user
-
 @router_user.post("/new-user")
-async def new_user(user: UserTable, controller: UserControllerDep) -> str:
-    await controller.create_controller(user)
-    return "Usuário criado com sucesso"
+async def new_user(user: UserTable, controller: UserControllerDep) -> UserReduce:
+    user = await controller.create_controller(user)
+    return UserReduce(id=user.id, email=user.email, nome=user.nome, role=user.role)
+
+@router_user.post("/login")
+async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], controller: UserControllerDep):
+    return await controller.user_login(form_data.username, form_data.password)
