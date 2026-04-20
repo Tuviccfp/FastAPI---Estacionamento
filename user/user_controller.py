@@ -1,5 +1,3 @@
-from typing import Any, Coroutine
-
 from fastapi import Depends
 from typing import Annotated
 
@@ -9,7 +7,6 @@ from user.user_service import UserService
 from user.user_table import UserTable
 
 
-
 class UserController:
     def __init__(self, service: UserService):
         self.service = service
@@ -17,8 +14,11 @@ class UserController:
     async def create_controller(self, user: UserTable):
         return await self.service.create_new_user(user)
 
-    async def get_user_controller(self, user_email: str) -> bool | None:
-        return await self.service.get_by_email(user_email)
+    async def user_login(self, email: str, password: str):
+        return await self.service.user_login(email, password)
+
+    async def get_user_by_id(self, user_id: int):
+        return await self.service.get_by_id(user_id)
 
 def get_user_controller(db: SessionDep):
     repo = UserRepository(db)
