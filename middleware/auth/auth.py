@@ -20,12 +20,14 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], contro
         id: int | None = payload.get("id")
         role: str = payload.get("role")
         if id is None and role is None:
-            raise HTTPException(status_code=401, detail="Invalid token")
+            raise HTTPException(status_code=404, detail="Não é possível identificar seus dados")
     except InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
     user = await controller.get_user_by_id(id)
     if user is None:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=401, detail="Você precisa ser um usuário para acessar")
+    if not user.role == "admin":
+        raise HTTPException(status_code=403, detail="Você não tem permissão para acessar")
     return user
 
 CurrentUser = Annotated[UserTable, Depends(get_current_user)]
