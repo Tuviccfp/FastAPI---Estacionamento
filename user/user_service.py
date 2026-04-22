@@ -1,10 +1,13 @@
 from datetime import timedelta
-from fastapi import HTTPException
+from typing import Annotated
+
+from fastapi import HTTPException, Depends
 from pygments.lexers import pascal
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from middleware.auth.token import create_access_token, Token
 from user.user_repository import UserRepository
-from user.user_table import UserTable, UserReduce
+from user.user_table import UserTable, UserReduce, UserDTOUpdate
 from utils.hash import verify_password, create_hash
 
 class UserService:
@@ -35,10 +38,6 @@ class UserService:
         await self.user_repo.create(new_user)
         return UserReduce(id=new_user.id, email=new_user.email, nome=new_user.nome, role=new_user.role)
 
-    async def get_by_id(self, user_id: int):
-        user = await self.get_by_id(user_id)
-        return UserReduce(id=user.id, email=user.email, nome=user.nome, role=user.role)
-
     async def user_login(self, email: str, password: str):
         user = await self.__authenticate_user(email, password)
         if not user:
@@ -47,3 +46,29 @@ class UserService:
         create_token = create_access_token(data={"id": user.id, "role": user.role}, expires_delta=acess_expires_token)
         return Token(acess_token=create_token, token_type="bearer")
 
+    async def get_all_users(self):
+        users = await self.user_repo.get_all()
+        return [UserReduce(id=user.id, email=user.email, nome=user.nome, role=user.role) for user in users]
+
+    async def get_by_id(self, user_id: int | None):
+        user = await self.user_repo.get_by_id(user_id)
+        return user
+
+    async def delete_by_id(self, user_id: int):
+        return await self.user_repo.delete_by_id(user_id)
+
+    async def update_user(self, user_id: int, user: UserTable):
+        user: UserTable = UserTable(
+            id=user_id,
+            nome=user.nome,
+            email=user.email,
+            password=create_hash(user.password),
+            role=user.role
+        )
+        return await self.user_repo.update_user(user_id, user)
+
+def get_user_service(db: AsyncSession):
+    repo = UserRepository(db)
+    return UserService(repo)
+
+UserServiceDep = Annotated[UserService, Depends(get_user_service)]
